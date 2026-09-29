@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/auth/21-plus", destination: "/auth/too-young", permanent: true },
       { source: "/linkups", destination: "/vybe", permanent: false },
       { source: "/linkups/:path*", destination: "/vybe/:path*", permanent: false },
       { source: "/discover", destination: "/explore", permanent: false },

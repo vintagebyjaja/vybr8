@@ -17,7 +17,8 @@ VYBR8 answers *"What should I / we eat, drink, or do tonight?"* with item-level 
 | Phase 0 foundation | Written. Run `npm run verify` locally to confirm (see below) |
 | Phase 1 database + auth | Migrations, RLS and seed verified on Postgres 16 |
 | Social: Plates & Pours + creators | Posts, photos, timeline, creators, team verification |
-| Birthdays + Birthday Perks | 21+ sign-up, birthday alerts, perks list: 172 security assertions total, 40 unit tests |
+| Birthdays + Birthday Perks | Birthday at sign-up, birthday alerts, perks list |
+| Age rules | VYBR8 is 13+; alcohol posts, drink perks and Liquid Lovers are 21+: 196 security assertions total, 42 unit tests |
 | Ranking engine core | Written early, 9 unit tests pass |
 
 ## Putting this on GitHub
@@ -68,6 +69,7 @@ Demo accounts from `supabase/seed.sql` (all fictional, password `vybr8-demo-only
 | marcus@demo.vybr8.test | Verified Liquid Lover creator |
 | chris@demo.vybr8.test | Pending creator application |
 | owner@demo.vybr8.test | Has a pending claim on "Ember & Oak (demo)" |
+| kay@demo.vybr8.test | 16 years old: sees food posts and perks, no alcohol content |
 
 ## Birthday alerts
 
@@ -78,6 +80,13 @@ select cron.schedule('vybr8-birthday-alerts', '0 13 * * *', 'select public.queue
 ```
 
 Demo birthdays: Jaja Oct 5, Tia Feb 29, Marcus Dec 20.
+
+## Vybe Map, Link Ups and guest chat
+
+- Signed-in Home shows the Vybe Map for the user's city (7 launch cities). It's a stylized frequency map; pins use real coordinates, so a street basemap can drop in later.
+- `/vybe` lists your Link Ups and open ones in your city; `/vybe/new` creates one (2–10 spots); `/vybe/[id]` has members, requests, invites, guest links and the group chat.
+- `/i/<token>` is the public guest page for people without an account.
+- Group chats disappear at the end time. `purge_ended_linkup_chats()` deletes them every 10 minutes via pg_cron (**Database → Cron**). Live chat uses Supabase Realtime on `linkup_messages` (**Database → Publications → supabase_realtime**).
 
 ## Making yourself Founder on the live site
 
