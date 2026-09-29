@@ -10,6 +10,7 @@ export type FeedPost = {
   priceCents: number | null;
   visibility: "public" | "friends" | "private";
   status: "published" | "hidden" | "removed";
+  isAlcoholic: boolean;
   isDemo: boolean;
   createdAt: string;
   author: {
@@ -35,6 +36,9 @@ export type PendingApplication = {
   city: string | null;
   pitch: string;
   links: { platform?: string; url: string }[];
+  /** Code the applicant puts in their Instagram/TikTok/YouTube bio or a post, so the team can confirm they own it. */
+  proofCode: string;
+  proofConfirmed: boolean;
   is21PlusAttested: boolean;
   createdAt: string;
   applicant: { id: string; username: string; displayName: string | null; postCount: number };

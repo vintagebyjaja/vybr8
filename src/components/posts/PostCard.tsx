@@ -42,6 +42,7 @@ export function PostCard({ post, signedIn, priority = false }: { post: FeedPost;
             <time dateTime={post.createdAt}>{timeAgo(new Date(post.createdAt))}</time>
           </p>
         </div>
+        {post.isAlcoholic && <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-bold text-muted" title="Alcohol: shown to members 21+">21+</span>}
         {post.isDemo && <DemoBadge label="Demo" />}
       </header>
 

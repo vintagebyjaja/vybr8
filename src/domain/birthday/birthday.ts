@@ -3,7 +3,10 @@
  * so a birthday never shifts because of time zones. Mirrors private.next_birthday in SQL.
  */
 
-export const MIN_AGE = 21;
+/** Minimum age to use VYBR8 (US social apps: 13+, COPPA). */
+export const MIN_AGE = 13;
+/** Alcohol content, drink perks and Liquid Lover verification. */
+export const DRINKING_AGE = 21;
 
 export type Ymd = { y: number; m: number; d: number };
 
@@ -34,6 +37,26 @@ export function ageOn(birth: Ymd, day: Ymd): number {
 
 export function isOldEnough(birth: Ymd, today: Ymd, minAge = MIN_AGE): boolean {
   return cmp(birth, today) <= 0 && ageOn(birth, today) >= minAge;
+}
+
+export function isDrinkingAge(birth: Ymd, today: Ymd): boolean {
+  return isOldEnough(birth, today, DRINKING_AGE);
+}
+
+/** The Pours tab unlocks this many days before a member's 21st birthday, so they can plan it. */
+export const POUR_EARLY_DAYS = 5;
+
+export function addDays({ y, m, d }: Ymd, days: number): Ymd {
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+}
+
+/**
+ * May see, vybe, comment on and review alcohol posts: 21+, or within 5 days of turning 21.
+ * Mirrors private.user_has_pour_access in SQL. Liquid Lovers and drinks Link Ups stay strictly 21+.
+ */
+export function hasPourAccess(birth: Ymd, today: Ymd): boolean {
+  return isDrinkingAge(birth, addDays(today, POUR_EARLY_DAYS));
 }
 
 /** The birthday as celebrated in a given year (Feb 29 → Feb 28 in non-leap years). */

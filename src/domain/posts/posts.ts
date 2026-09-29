@@ -41,6 +41,8 @@ export type PostDraft = {
   rating?: number | null;
   priceCents?: number | null;
   visibility?: string;
+  /** Drinks only. Alcohol posts are 21+ (checked again on the server and in the database). */
+  isAlcoholic?: boolean;
   photos: readonly PostPhoto[];
 };
 
@@ -52,6 +54,7 @@ export type ValidPost = {
   rating: number | null;
   priceCents: number | null;
   visibility: "public" | "friends" | "private";
+  isAlcoholic: boolean;
   photos: PostPhoto[];
 };
 
@@ -110,6 +113,7 @@ export function validatePostDraft(
   const businessId = clean(draft.businessId);
   if (businessId && !UUID.test(businessId)) errors.push("Pick the place from the list.");
   if (draft.kind === "spot" && !businessId) errors.push("Tag the place for a Spot post.");
+  if (draft.isAlcoholic && draft.kind !== "pour") errors.push("Only drink posts can be marked as alcohol.");
 
   if (errors.length) return { ok: false, errors };
   return {
@@ -122,6 +126,7 @@ export function validatePostDraft(
       rating,
       priceCents,
       visibility: visibility as ValidPost["visibility"],
+      isAlcoholic: draft.kind === "pour" && !!draft.isAlcoholic,
       photos: photos.map((p) => ({ ...p, altText: p.altText?.trim() || undefined })),
     },
   };

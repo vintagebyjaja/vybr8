@@ -10,7 +10,7 @@ export async function getPendingApplications(limit = 50): Promise<{ items: Pendi
   const supabase = await createClient();
   const { data, count } = await supabase
     .from("creator_applications")
-    .select("id, creator_type, city, pitch, links, is_21_plus_attested, created_at, user_id, applicant:profiles!creator_applications_user_id_fkey ( username, display_name )", { count: "exact" })
+    .select("id, creator_type, city, pitch, links, is_21_plus_attested, created_at, user_id, proof_code, proof_confirmed_at, applicant:profiles!creator_applications_user_id_fkey ( username, display_name )", { count: "exact" })
     .eq("status", "pending")
     .order("created_at", { ascending: true })
     .limit(limit);
@@ -36,6 +36,8 @@ export async function getPendingApplications(limit = 50): Promise<{ items: Pendi
         pitch: r.pitch as string,
         links: Array.isArray(r.links) ? (r.links as PendingApplication["links"]) : [],
         is21PlusAttested: r.is_21_plus_attested as boolean,
+        proofCode: (r.proof_code as string | null) ?? "",
+        proofConfirmed: !!r.proof_confirmed_at,
         createdAt: r.created_at as string,
         applicant: { id: r.user_id as string, username: a?.username ?? "unknown", displayName: a?.display_name ?? null, postCount: counts.get(r.user_id as string) ?? 0 },
       };

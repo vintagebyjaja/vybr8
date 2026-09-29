@@ -14,7 +14,7 @@ const SIGNED_URL_TTL = 60 * 60;
 const BUCKET = "post-media";
 
 const POST_SELECT = `
-  id, kind, item_name, caption, rating, price_cents, visibility, status, is_demo, created_at, author_id,
+  id, kind, item_name, caption, rating, price_cents, visibility, status, is_alcoholic, is_demo, created_at, author_id,
   author:profiles!posts_author_id_fkey ( id, username, display_name ),
   business:businesses ( slug, name ),
   media:post_media ( storage_path, position, width, height, alt_text )
@@ -30,6 +30,7 @@ type Row = {
   price_cents: number | null;
   visibility: FeedPost["visibility"];
   status: FeedPost["status"];
+  is_alcoholic: boolean;
   is_demo: boolean;
   created_at: string;
   author_id: string;
@@ -43,7 +44,8 @@ export type FeedQuery =
   | { kind: "creators"; postKind?: PostKind }
   | { kind: "recent"; postKind?: PostKind }
   | { kind: "author"; authorId: string }
-  | { kind: "business"; businessId: string };
+  | { kind: "business"; businessId: string }
+  | { kind: "businesses"; businessIds: string[] };
 
 export async function getFeed(query: FeedQuery, cursor?: string | null): Promise<FeedPage> {
   const supabase = await createClient();
@@ -81,6 +83,10 @@ export async function getFeed(query: FeedQuery, cursor?: string | null): Promise
       break;
     case "business":
       q = q.eq("business_id", query.businessId);
+      break;
+    case "businesses":
+      if (!query.businessIds.length) return { posts: [], nextCursor: null };
+      q = q.in("business_id", query.businessIds);
       break;
   }
 
@@ -176,6 +182,7 @@ async function hydrate(supabase: Supabase, rows: Row[], viewerId: string | null)
     priceCents: r.price_cents,
     visibility: r.visibility,
     status: r.status,
+    isAlcoholic: r.is_alcoholic,
     isDemo: r.is_demo,
     createdAt: r.created_at,
     author: {

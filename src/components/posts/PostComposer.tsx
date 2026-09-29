@@ -25,7 +25,7 @@ async function prepareImage(file: File): Promise<{ blob: Blob; width: number; he
   return { blob, width, height };
 }
 
-export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "plate" }: { userId: string; venues: Venue[]; defaultVenueId?: string; defaultKind?: PostKind }) {
+export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "plate", canPostAlcohol, under21 = false }: { userId: string; venues: Venue[]; defaultVenueId?: string; defaultKind?: PostKind; canPostAlcohol: boolean; under21?: boolean }) {
   const router = useRouter();
   const ids = useId();
   const [kind, setKind] = useState<PostKind>(defaultKind);
@@ -37,6 +37,7 @@ export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "pl
   const [rating, setRating] = useState(8.5);
   const [price, setPrice] = useState("");
   const [visibility, setVisibility] = useState("public");
+  const [alcoholic, setAlcoholic] = useState(canPostAlcohol && !under21);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,6 +71,7 @@ export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "pl
     // Check everything except the uploads first, so nothing uploads for a post that can't be saved.
     const dry = validatePostDraft(userId, {
       kind, businessId: venueId || null, itemName, caption, rating: rate ? rating : null, priceCents, visibility,
+      isAlcoholic: kind === "pour" && alcoholic,
       photos: photos.map((_, i) => ({ path: `${userId}/check-${i}.jpg`, width: 1, height: 1 })),
     });
     if (!dry.ok) return setError(dry.errors[0] ?? "Check your post.");
@@ -87,7 +89,7 @@ export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "pl
         uploaded.push({ path, width, height, altText: p.alt || undefined });
       }
       setStatus("Posting…");
-      const res = await createPost({ kind, businessId: venueId || null, itemName, caption, rating: rate ? rating : null, priceCents, visibility, photos: uploaded });
+      const res = await createPost({ kind, businessId: venueId || null, itemName, caption, rating: rate ? rating : null, priceCents, visibility, isAlcoholic: kind === "pour" && alcoholic, photos: uploaded });
       if ("error" in res) {
         setError(res.error);
         return;
@@ -149,6 +151,25 @@ export function PostComposer({ userId, venues, defaultVenueId, defaultKind = "pl
           {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
       </div>
+
+      {kind === "pour" && (
+        <div className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-4">
+          <label className={`flex items-center gap-3 text-sm font-semibold ${canPostAlcohol ? "" : "opacity-60"}`}>
+            <input type="checkbox" checked={canPostAlcohol && alcoholic} disabled={!canPostAlcohol} onChange={(e) => setAlcoholic(e.target.checked)} className="size-5 accent-[var(--color-coral)]" />
+            Contains alcohol (21+)
+          </label>
+          <p className="text-xs text-faint">
+            {canPostAlcohol
+              ? "Alcohol posts are only shown to members 21 and older. Untick for coffee, tea, matcha, boba, lemonade, smoothies and mocktails."
+              : "Alcohol posts open up 5 days before your 21st birthday. You can post coffee, tea, matcha, boba, lemonade, smoothies and mocktails."}
+          </p>
+          {canPostAlcohol && under21 && alcoholic && (
+            <p className="text-xs text-orange">
+              Your 21st is almost here. Review the place, the menu and the vibe. Don&rsquo;t post about drinking alcohol before your birthday; places only serve guests 21+.
+            </p>
+          )}
+        </div>
+      )}
 
       {kind !== "spot" && (
         <div className="flex flex-col gap-1.5">

@@ -44,7 +44,14 @@ export function SideNav() {
       <Link href="/post/new" className="vybe-gradient flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-bold text-ink hover:brightness-110">
         <span aria-hidden className="text-lg leading-none">+</span> Post a Plate or Pour
       </Link>
-      <Link href="/birthday" className="text-sm font-semibold text-muted hover:text-text">Birthday Perks</Link>
+      <div className="flex flex-col gap-2 text-sm font-semibold">
+        <Link href="/groups" className="text-muted hover:text-text">Groups &amp; Family</Link>
+        <Link href="/charts" className="text-muted hover:text-text">Charts</Link>
+        <Link href="/chefs" className="text-muted hover:text-text">Chefs</Link>
+        <Link href="/food-trucks" className="text-muted hover:text-text">Food Trucks</Link>
+        <Link href="/birthday" className="text-muted hover:text-text">Birthday Perks</Link>
+        <Link href="/pricing" className="text-muted hover:text-text">VYBR8 MAX</Link>
+      </div>
       <Link href="/team" className="text-xs font-semibold text-faint hover:text-muted">VYBR8 Team</Link>
       <p className="mt-auto text-xs tracking-[0.2em] text-faint">EAT • DRINK • LINK UP</p>
     </nav>

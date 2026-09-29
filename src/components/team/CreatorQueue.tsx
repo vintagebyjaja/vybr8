@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { approveCreator, rejectCreator } from "@/app/(app)/team/actions";
+import { approveCreator, confirmProof, rejectCreator } from "@/app/(app)/team/actions";
 import { CreatorBadge } from "@/components/posts/Badges";
 import { Button } from "@/components/ui/Button";
 import type { PendingApplication } from "@/domain/posts/feed-types";
@@ -27,12 +27,25 @@ export function CreatorQueue({ applications, returnTo }: { applications: Pending
               <li key={l.url}><a href={l.url} target="_blank" rel="noopener noreferrer nofollow" className="text-sky hover:underline">{l.platform ?? "Link"}</a></li>
             ))}
           </ul>
+          <div className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 text-sm ${a.proofConfirmed ? "border-sky/40" : "border-orange/40"}`}>
+            <span>
+              Proof code <code className="rounded bg-surface-2 px-1.5 py-0.5 font-bold text-orange">{a.proofCode}</code>
+              {a.proofConfirmed ? <span className="ml-2 text-sky">Confirmed</span> : <span className="ml-2 text-muted">Open their account above and check the code is in their bio or a recent post.</span>}
+            </span>
+            {!a.proofConfirmed && (
+              <form action={confirmProof}>
+                <input type="hidden" name="applicationId" value={a.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <button className="min-h-9 rounded-full border border-sky/60 px-4 text-xs font-bold text-sky">I saw the code</button>
+              </form>
+            )}
+          </div>
           <form className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input type="hidden" name="applicationId" value={a.id} />
             <input type="hidden" name="returnTo" value={returnTo} />
             <label className="sr-only" htmlFor={`note-${a.id}`}>Note</label>
             <input id={`note-${a.id}`} name="note" maxLength={500} placeholder="Note (required to decline)" className="min-h-11 flex-1 rounded-xl border border-line bg-surface-2 px-3 text-sm" />
-            <Button formAction={approveCreator}>Verify</Button>
+            <Button formAction={approveCreator} disabled={!a.proofConfirmed} title={a.proofConfirmed ? undefined : "Confirm the proof code first"}>Verify</Button>
             <Button formAction={rejectCreator} variant="danger">Decline</Button>
           </form>
         </li>
