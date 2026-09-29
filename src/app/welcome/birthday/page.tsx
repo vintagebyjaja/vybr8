@@ -14,7 +14,7 @@ export default async function ConfirmBirthdayPage() {
       <Image src="/brand-badge.webp" alt="" width={120} height={120} className="mx-auto size-24" />
       <div className="text-center">
         <h1 className="text-3xl font-bold">When&rsquo;s your birthday?</h1>
-        <p className="mt-2 text-sm text-muted">VYBR8 is for adults 21 and over. We&rsquo;ll also send you birthday perks. Your birthday is never shown to anyone.</p>
+        <p className="mt-2 text-sm text-muted">VYBR8 is for people 13 and older. Coffee, tea, matcha and lemonade are for everyone; only alcohol posts, alcohol perks and Liquid Lovers are 21+. We&rsquo;ll also send you birthday perks. Your birthday is never shown to anyone.</p>
       </div>
       <BirthdayForm />
     </main>

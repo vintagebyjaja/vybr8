@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PerkCard } from "@/components/birthday/PerkCard";
 import { PostButton } from "@/components/posts/PostButton";
 import { PostGrid } from "@/components/posts/PostGrid";
@@ -8,12 +8,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/server/auth";
 import { getBirthdayPerks } from "@/server/birthday";
 import { getFeed } from "@/server/posts";
+import { getMenu, getPlaceStats } from "@/server/menus";
+import { MenuList } from "@/components/menu/MenuList";
+import { RatePlace } from "@/components/ratings/RatePlace";
 
 type Params = { params: Promise<{ slug: string }> };
 
 const KIND_LABEL: Record<string, string> = {
   restaurant: "Restaurant", bar: "Bar", cocktail_lounge: "Cocktail lounge", lounge: "Lounge", cigar_lounge: "Cigar lounge",
-  hookah_lounge: "Hookah lounge", cafe: "Café", bakery: "Bakery", food_truck: "Food truck", brewery: "Brewery", nightlife: "Nightlife",
+  hookah_lounge: "Hookah lounge", cafe: "Coffee shop", tea_shop: "Tea & matcha", juice_bar: "Juice & lemonade", bakery: "Bakery", food_truck: "Food truck", brewery: "Brewery", nightlife: "Nightlife",
 };
 
 async function loadVenue(slug: string) {
@@ -36,11 +39,25 @@ export default async function VenuePage({ params }: Params) {
   const { slug } = await params;
   const venue = await loadVenue(slug);
   if (!venue) notFound();
-  const [viewer, page, perks] = await Promise.all([
-    getViewer(),
+  const viewerP = getViewer();
+  const [viewer, page, perks, menu, stats, chefRows] = await Promise.all([
+    viewerP,
     getFeed({ kind: "business", businessId: venue.id as string }),
     getBirthdayPerks({ businessId: venue.id as string }),
+    viewerP.then((v) => getMenu(venue.id as string, v?.id ?? null)),
+    getPlaceStats(venue.id as string),
+    (async () => {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("chef_business_relationships")
+        .select("role, end_date, verification_status, chef:chef_profiles ( slug, professional_name )")
+        .eq("business_id", venue.id as string);
+      const today = new Date().toISOString().slice(0, 10);
+      return ((data ?? []) as unknown as { role: string; end_date: string | null; verification_status: string; chef: { slug: string; professional_name: string } | null }[])
+        .filter((r) => r.chef && (!r.end_date || r.end_date >= today));
+    })(),
   ]);
+  if (venue.kind === "food_truck") redirect(`/food-trucks/${venue.slug}`);
   const locations = (venue.locations ?? []) as { label: string | null; city: string; region: string; is_primary: boolean }[];
   const primary = locations.find((l) => l.is_primary) ?? locations[0];
   const plates = page.posts.filter((p) => p.kind === "plate").length;
@@ -68,10 +85,30 @@ export default async function VenuePage({ params }: Params) {
       </header>
 
       <section aria-labelledby="reviews-h" className="flex flex-col gap-3">
-        <h2 id="reviews-h" className="text-xl font-bold">Ratings &amp; reviews</h2>
-        <div className="rounded-[var(--radius-card)] vybe-ring p-5 text-sm text-muted">
-          Dish-by-dish VYBR8 scores, Service Vybe and Aesthetic ratings arrive with item ratings (Phase 3). Until then, the plates and pours people post below are the best guide.
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="reviews-h" className="text-xl font-bold">Ratings</h2>
+          {viewer && <RatePlace businessId={venue.id as string} returnTo={`/venue/${venue.slug}`} />}
         </div>
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {([["Overall", stats.overall], ["Service Vybe", stats.serviceVybe], ["Value", stats.value], ["Aesthetic", stats.aesthetic]] as const).map(([k, v]) => (
+            <div key={k} className="rounded-2xl border border-line bg-surface p-4 text-center">
+              <dt className="text-xs font-bold uppercase tracking-wide text-faint">{k}</dt>
+              <dd className="font-display text-2xl font-extrabold">{v != null ? <span className="vybe-text">{v.toFixed(1)}</span> : <span className="text-faint">–</span>}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-xs text-faint">{stats.count ? `${stats.count} ${stats.count === 1 ? "rating" : "ratings"} of the place.` : "No ratings of the place yet."} Dishes and drinks are rated one by one below.</p>
+        {chefRows.length > 0 && (
+          <p className="text-sm">
+            <span className="text-muted">In the kitchen:</span>{" "}
+            {chefRows.map((r, i) => <span key={r.chef!.slug}>{i > 0 && ", "}<Link href={`/chef/${r.chef!.slug}`} className="font-semibold text-sky">{r.chef!.professional_name}</Link> <span className="text-muted">({r.role}{r.verification_status === "self_reported" ? ", self-reported" : ""})</span></span>)}
+          </p>
+        )}
+      </section>
+
+      <section aria-labelledby="menu-h" className="flex flex-col gap-3">
+        <h2 id="menu-h" className="text-xl font-bold">Menu &amp; VYBR8 scores</h2>
+        <MenuList items={menu} signedIn={!!viewer} returnTo={`/venue/${venue.slug}`} />
       </section>
 
       {perks.length > 0 && (

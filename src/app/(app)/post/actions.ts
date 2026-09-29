@@ -22,6 +22,7 @@ export async function createPost(draft: PostDraft): Promise<CreatePostResult> {
   const result = validatePostDraft(viewer.id, draft);
   if (!result.ok) return { error: result.errors[0] ?? "Check your post and try again." };
   const v = result.value;
+  if (v.isAlcoholic && !viewer.hasPourAccess) return { error: "Alcohol posts open up 5 days before your 21st birthday." };
 
   const supabase = await createClient();
   const { data: post, error } = await supabase
@@ -34,6 +35,7 @@ export async function createPost(draft: PostDraft): Promise<CreatePostResult> {
       rating: v.rating,
       price_cents: v.priceCents,
       visibility: v.visibility,
+      is_alcoholic: v.isAlcoholic,
     })
     .select("id")
     .single();

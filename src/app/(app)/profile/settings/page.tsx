@@ -1,3 +1,4 @@
+import { PhotoUpload } from "@/components/profile/PhotoUpload";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/server/auth";
@@ -25,7 +26,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { saved, error, welcome } = await searchParams;
   const supabase = await createClient();
   const [{ data: profile }, { data: privacy }, { data: settings }] = await Promise.all([
-    supabase.from("profiles").select("username, display_name, bio, home_city").eq("id", viewer.id).single(),
+    supabase.from("profiles").select("username, display_name, bio, home_city, avatar_url").eq("id", viewer.id).single(),
     supabase.from("privacy_settings").select("*").eq("user_id", viewer.id).single(),
     supabase.from("user_settings").select("notification_prefs").eq("user_id", viewer.id).single(),
   ]);
@@ -48,6 +49,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
       <fieldset className="flex flex-col gap-4">
         <legend className="mb-2 text-lg font-bold">Profile</legend>
+        <PhotoUpload userId={viewer.id} path={(profile?.avatar_url as string | null) ?? null} name={(profile?.display_name as string | null) ?? (profile?.username as string) ?? "?"} />
+        <a href="/verify" className="self-start text-sm font-semibold text-sky">Get ID verified →</a>
         {[
           { id: "display_name", label: "Name", value: profile?.display_name, max: 60 },
           { id: "home_city", label: "Home city", value: profile?.home_city, max: 80 },

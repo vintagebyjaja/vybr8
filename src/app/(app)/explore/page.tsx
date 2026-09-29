@@ -3,6 +3,7 @@ import { CreatorBadge } from "@/components/posts/Badges";
 import { FeedTabs } from "@/components/posts/FeedTabs";
 import { PostButton } from "@/components/posts/PostButton";
 import { PostGrid } from "@/components/posts/PostGrid";
+import { SearchBox } from "@/components/search/SearchBox";
 import { ComingSoon } from "@/components/ui/ComingSoon";
 import type { PostKind } from "@/domain/posts/posts";
 import { getViewer } from "@/server/auth";
@@ -34,10 +35,25 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold md:text-4xl">Explore</h1>
-          <p className="mt-1 text-muted">Plates for the Big Backs. Pours for the Liquid Lovers.</p>
+          <p className="mt-1 text-muted">Plates for the Big Backs. Pours for everyone: coffee, matcha, lemonade, and cocktails for the Liquid Lovers (21+).</p>
         </div>
         {viewer && <PostButton />}
       </header>
+
+      <section aria-label="Discover" className="flex flex-col gap-3">
+        <SearchBox />
+        <nav aria-label="Discover by" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {[
+            { href: "/search?tab=food", label: "FOOD", tone: "text-orange" },
+            { href: "/search?tab=drinks", label: "DRINKS", tone: "text-coral" },
+            { href: "/chefs", label: "CHEFS", tone: "text-lavender" },
+            { href: "/food-trucks", label: "FOOD TRUCKS", tone: "text-sky" },
+            { href: "/search?tab=nightlife", label: "NIGHTLIFE", tone: "text-lavender" },
+          ].map((t) => (
+            <Link key={t.label} href={t.href} className={`rounded-2xl border border-line bg-surface p-4 text-center font-display text-sm font-extrabold tracking-wide hover:bg-surface-2 ${t.tone}`}>{t.label}</Link>
+          ))}
+        </nav>
+      </section>
 
       <section aria-labelledby="creators-h" className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-4">
@@ -71,6 +87,16 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
           </Link>
         </div>
         <FeedTabs tabs={TABS} active={kind} base="/explore" param="kind" extra={everyone ? "from=everyone" : undefined} />
+        {viewer?.daysUntil21 != null ? (
+          <p className="rounded-xl border border-orange/40 bg-orange/10 p-3 text-sm">
+            Your 21st is {viewer.daysUntil21 === 0 ? "today" : `in ${viewer.daysUntil21} ${viewer.daysUntil21 === 1 ? "day" : "days"}`}! Pours are unlocked so you can plan where to celebrate.
+            {viewer.daysUntil21 > 0 ? " Places only serve alcohol to guests 21+, so save the drinks for your birthday." : ""}
+          </p>
+        ) : !viewer?.hasPourAccess && (
+          <p className="text-xs text-faint">
+            {viewer ? "Cocktail and alcohol posts are shown to members 21+, starting 5 days before your 21st birthday. Every place is still on VYBR8." : "Cocktail and alcohol posts are for members 21+. Sign in to see them."}
+          </p>
+        )}
         <PostGrid posts={page.posts} empty="Nothing here yet. Be the first to post." />
       </section>
 

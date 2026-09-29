@@ -20,6 +20,15 @@ export async function approveCreator(form: FormData) {
   revalidatePath("/explore");
 }
 
+export async function confirmProof(form: FormData) {
+  const staff = await requireStaff();
+  const { applicationId, returnTo } = decision.parse(Object.fromEntries(form));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("confirm_creator_proof", { p_application_id: applicationId });
+  if (error) log.warn("team.confirm_proof_failed", { applicationId, staffId: staff.id, code: error.code });
+  revalidatePath(safeNext(returnTo, "/team/creators"));
+}
+
 export async function rejectCreator(form: FormData) {
   const staff = await requireStaff();
   const { applicationId, note, returnTo } = decision.parse(Object.fromEntries(form));

@@ -19,7 +19,7 @@ export default async function NewPostPage({ searchParams }: { searchParams: Prom
         <h1 className="text-3xl font-bold">Post your <span className="vybe-text">vybe</span></h1>
         <p className="mt-1 text-muted">Share the plate, the pour, or the spot. It shows up on your profile, your friends&rsquo; timelines, and the place&rsquo;s page.</p>
       </header>
-      <PostComposer userId={viewer.id} venues={(venues ?? []).map((v) => ({ id: v.id as string, name: v.name as string }))} defaultVenueId={defaultVenueId} defaultKind={defaultKind} />
+      <PostComposer userId={viewer.id} venues={(venues ?? []).map((v) => ({ id: v.id as string, name: v.name as string }))} defaultVenueId={defaultVenueId} defaultKind={defaultKind} canPostAlcohol={viewer.hasPourAccess} under21={!viewer.is21Plus} />
     </div>
   );
 }

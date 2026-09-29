@@ -92,7 +92,10 @@ export default async function BirthdayPage({ searchParams }: Search) {
             {others.map((p) => <li key={p.id}><PerkCard perk={p} /></li>)}
           </ul>
         )}
-        <p className="text-xs text-faint">Perks are set by each place and can change. Confirm with them before you go. Drink perks are for guests 21+.</p>
+        <p className="text-xs text-faint">
+          Perks are set by each place and can change. Confirm with them before you go.{" "}
+          {viewer?.hasPourAccess ? "Drink perks are for guests 21+." : "Drink perks show up 5 days before your 21st birthday."}
+        </p>
       </section>
 
       {viewer && (
@@ -113,7 +116,7 @@ export default async function BirthdayPage({ searchParams }: Search) {
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Type
               <select name="perkType" className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 font-normal">
-                <option value="free_food">Free food</option><option value="free_drink">Free drink (21+)</option><option value="discount">Discount</option><option value="other">Other</option>
+                <option value="free_food">Free food</option>{viewer.is21Plus && <option value="free_drink">Free drink (21+)</option>}<option value="discount">Discount</option><option value="other">Other</option>
               </select>
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">When

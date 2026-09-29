@@ -10,7 +10,7 @@ import { getUnreadCount } from "@/server/birthday";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getViewer();
-  // Everyone must confirm they're 21+ before using VYBR8 (email sign-ups already did).
+  // Everyone must give a birthday (13+) before using VYBR8 (email sign-ups already did).
   if (viewer && !viewer.birthdate) redirect("/welcome/birthday");
   const unread = viewer ? await getUnreadCount(viewer.id) : 0;
 

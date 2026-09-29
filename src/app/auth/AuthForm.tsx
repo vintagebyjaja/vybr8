@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import type { AuthState } from "./actions";
 
-/** Latest birthdate that is 21 today (the server re-checks; this just guides the date picker). */
+/** Latest birthdate that is 13 today (the server re-checks; this just guides the date picker). */
 function latestAllowedBirthdate() {
   const now = new Date();
-  return new Date(now.getFullYear() - 21, now.getMonth(), now.getDate()).toLocaleDateString("en-CA");
+  return new Date(now.getFullYear() - 13, now.getMonth(), now.getDate()).toLocaleDateString("en-CA");
 }
 
 export function AuthForm({
@@ -36,7 +36,7 @@ export function AuthForm({
             autoComplete="bday"
             required
             max={maxBirthdate}
-            hint="You must be 21 or older to join. We'll send you birthday perks, and never show your birthday to anyone."
+            hint="You must be 13 or older. Cocktail posts and drink perks unlock at 21. We never show your birthday to anyone."
           />
         </>
       )}

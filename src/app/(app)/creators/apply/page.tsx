@@ -12,7 +12,7 @@ export default async function ApplyPage({ searchParams }: { searchParams: Promis
   const supabase = await createClient();
   const [{ data: creator }, { data: latest }] = await Promise.all([
     supabase.from("creator_profiles").select("creator_type, status").eq("user_id", viewer.id).maybeSingle(),
-    supabase.from("creator_applications").select("status, decision_note").eq("user_id", viewer.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("creator_applications").select("status, decision_note, proof_code, proof_confirmed_at").eq("user_id", viewer.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   return (
@@ -28,13 +28,22 @@ export default async function ApplyPage({ searchParams }: { searchParams: Promis
       ) : creator?.status === "suspended" ? (
         <p className="rounded-2xl border border-danger/40 p-4 text-sm text-danger">Your creator badge is paused. Contact the VYBR8 team for details.</p>
       ) : sent || latest?.status === "pending" ? (
-        <p className="rounded-2xl border border-mint/40 p-4 text-sm text-mint">Application sent. The VYBR8 team will review it, and your badge appears on your profile once you&rsquo;re verified.</p>
+        <div className="flex flex-col gap-3 rounded-2xl border border-sky/40 p-4 text-sm">
+          <p className="font-semibold">Application sent. One more step so we know the account is really yours:</p>
+          <p>
+            Add this code to your Instagram, TikTok or YouTube bio (or a post caption) until you&rsquo;re verified:{" "}
+            <code className="rounded bg-surface-2 px-2 py-1 font-bold text-orange">{(latest?.proof_code as string | undefined) ?? "…"}</code>
+          </p>
+          <p className="text-muted">
+            {latest?.proof_confirmed_at ? "The team saw your code. You'll get your badge once they finish reviewing." : "The VYBR8 team checks the code, then reviews your posts. Your badge appears on your profile once you're verified."}
+          </p>
+        </div>
       ) : (
         <>
           {latest?.status === "rejected" && (
             <p className="rounded-2xl border border-line p-4 text-sm text-muted">Your last application wasn&rsquo;t approved{latest.decision_note ? `: ${latest.decision_note}` : "."} You can apply again.</p>
           )}
-          <ApplyForm />
+          <ApplyForm canBeLiquidLover={viewer.is21Plus} />
         </>
       )}
       <Link href="/explore" className="text-sm text-muted hover:text-text">← Back to Explore</Link>

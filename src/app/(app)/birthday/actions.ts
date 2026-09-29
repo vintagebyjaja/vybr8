@@ -18,10 +18,11 @@ const suggestion = z.object({
 
 /** Anyone signed in can suggest a perk. The database marks it pending unless they manage that business. */
 export async function suggestPerk(form: FormData) {
-  await requireViewer("/birthday");
+  const viewer = await requireViewer("/birthday");
   const parsed = suggestion.safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/birthday?suggest=invalid#suggest");
   const v = parsed.data;
+  if (v.perkType === "free_drink" && !viewer.is21Plus) redirect("/birthday?suggest=invalid#suggest");
   const supabase = await createClient();
   const { error } = await supabase.from("birthday_perks").insert({
     business_id: v.businessId,

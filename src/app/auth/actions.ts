@@ -47,7 +47,7 @@ export async function signUp(_prev: AuthState, form: FormData): Promise<AuthStat
   if (!birth) return { error: "Enter your birthday as a full date." };
   if (!isOldEnough(birth, todayIn())) {
     // Nothing is stored for people under the minimum age.
-    return { error: `VYBR8 is for adults ${MIN_AGE} and over. Come back when it's time to celebrate!` };
+    return { error: `VYBR8 is for people ${MIN_AGE} and older.` };
   }
 
   const supabase = await createClient();

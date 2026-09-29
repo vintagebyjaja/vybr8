@@ -10,7 +10,7 @@ const TYPES = [
   { value: "both", title: "Both", line: "You post the plate and the pour.", tone: "text-coral" },
 ];
 
-export function ApplyForm() {
+export function ApplyForm({ canBeLiquidLover }: { canBeLiquidLover: boolean }) {
   const [state, action, pending] = useActionState(applyForCreator, {});
   const [type, setType] = useState("big_back");
   const input = "min-h-11 rounded-xl border border-line bg-surface px-3";
@@ -19,15 +19,19 @@ export function ApplyForm() {
     <form action={action} className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-semibold">What kind of creator are you?</legend>
-        {TYPES.map((t) => (
-          <label key={t.value} className={`flex cursor-pointer flex-col gap-1 rounded-2xl border p-4 ${type === t.value ? "vybe-ring" : "border-line hover:bg-surface-2"}`}>
-            <span className="flex items-center gap-3">
-              <input type="radio" name="creatorType" value={t.value} checked={type === t.value} onChange={() => setType(t.value)} className="size-4 accent-[var(--color-coral)]" />
-              <span className={`font-display text-lg font-bold ${t.tone}`}>{t.title}</span>
-            </span>
-            <span className="pl-7 text-sm text-muted">{t.line}</span>
-          </label>
-        ))}
+        {TYPES.map((t) => {
+          const locked = t.value !== "big_back" && !canBeLiquidLover;
+          return (
+            <label key={t.value} className={`flex flex-col gap-1 rounded-2xl border p-4 ${locked ? "cursor-not-allowed border-line opacity-50" : type === t.value ? "vybe-ring cursor-pointer" : "cursor-pointer border-line hover:bg-surface-2"}`}>
+              <span className="flex items-center gap-3">
+                <input type="radio" name="creatorType" value={t.value} checked={type === t.value} disabled={locked} onChange={() => setType(t.value)} className="size-4 accent-[var(--color-coral)]" />
+                <span className={`font-display text-lg font-bold ${t.tone}`}>{t.title}</span>
+                {t.value !== "big_back" && <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-bold text-muted">21+</span>}
+              </span>
+              <span className="pl-7 text-sm text-muted">{locked ? "Unlocks when you turn 21." : t.line}</span>
+            </label>
+          );
+        })}
       </fieldset>
 
       <div className="flex flex-col gap-1.5">
@@ -39,10 +43,11 @@ export function ApplyForm() {
         <input id="city" name="city" maxLength={80} className={input} />
       </div>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-sm font-semibold">Where else you post <span className="font-normal text-faint">(optional)</span></legend>
+        <legend className="mb-1 text-sm font-semibold">Your accounts <span className="font-normal text-faint">(at least one of Instagram, TikTok or YouTube)</span></legend>
+        <p className="-mt-1 text-xs text-faint">After you apply you&rsquo;ll get a short code to put in your bio, so we can confirm the account is yours.</p>
         <input aria-label="Instagram link" name="instagram" type="url" placeholder="https://instagram.com/you" className={input} />
-        <input aria-label="TikTok link" name="tiktok" type="url" placeholder="https://tiktok.com/@you" className={input} />
-        <input aria-label="Other link" name="other" type="url" placeholder="https://…" className={input} />
+        <input aria-label="TikTok link" name="tiktok" type="url" placeholder="https://www.tiktok.com/@you" className={input} />
+        <input aria-label="YouTube link" name="youtube" type="url" placeholder="https://youtube.com/@you" className={input} />
       </fieldset>
 
       {type !== "big_back" && (

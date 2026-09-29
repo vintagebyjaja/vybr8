@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/Avatar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CreatorBadge, TeamBadge } from "@/components/posts/Badges";
@@ -28,7 +29,7 @@ export default async function ProfilePage({ params }: Params) {
   // RLS decides visibility: a private or friends-only profile simply returns no row.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, display_name, bio, home_city, home_region, is_demo")
+    .select("id, username, display_name, bio, home_city, home_region, is_demo, avatar_url")
     .eq("username", username)
     .maybeSingle();
   if (!profile) notFound();
@@ -37,7 +38,7 @@ export default async function ProfilePage({ params }: Params) {
   const isMe = viewer?.id === id;
   const isStaff = !!viewer?.platformRoles.length;
 
-  const [creator, team, followers, following, iFollow, myApplication, page] = await Promise.all([
+  const [creator, team, followers, following, iFollow, myApplication, page, idCheck] = await Promise.all([
     supabase.from("creator_profiles").select("creator_type, status").eq("user_id", id).maybeSingle(),
     supabase.from("team_members").select("title, bio").eq("user_id", id).maybeSingle(),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("followee_id", id),
@@ -45,7 +46,9 @@ export default async function ProfilePage({ params }: Params) {
     viewer && !isMe ? supabase.from("follows").select("followee_id").eq("follower_id", viewer.id).eq("followee_id", id).maybeSingle() : Promise.resolve({ data: null }),
     isMe ? supabase.from("creator_applications").select("status").eq("user_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
     getFeed({ kind: "author", authorId: id }),
+    supabase.rpc("identity_verified", { p_users: [id] }),
   ]);
+  const idVerified = ((idCheck.data ?? []) as unknown[]).length > 0;
 
   const creatorType = creator.data?.status === "verified" ? (creator.data.creator_type as CreatorType) : null;
   const teamTitle = (team.data?.title as string | undefined) ?? null;
@@ -56,14 +59,13 @@ export default async function ProfilePage({ params }: Params) {
   return (
     <article className="flex flex-col gap-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div aria-hidden className="vybe-gradient grid size-24 shrink-0 place-items-center rounded-full font-display text-4xl font-extrabold text-ink">
-          {name.slice(0, 1).toUpperCase()}
-        </div>
+        <Avatar path={profile.avatar_url as string | null} name={name} size="xl" verified={idVerified} />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate text-2xl font-bold">{name}</h1>
             {teamTitle && <TeamBadge title={teamTitle} size="md" />}
             {creatorType && <CreatorBadge type={creatorType} size="md" />}
+            {idVerified && <span className="rounded-full border border-sky/50 px-2 py-0.5 text-xs font-bold text-sky">ID verified</span>}
             {profile.is_demo && <DemoBadge label="Demo profile" />}
           </div>
           <p className="text-sm text-muted">
@@ -84,6 +86,7 @@ export default async function ProfilePage({ params }: Params) {
         {isMe ? (
           <>
             <PostButton />
+            <Link href="/groups" className="vybe-ring inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold">Groups &amp; Family</Link>
             <Link href="/profile/settings" className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-bold hover:bg-surface-2">Edit profile &amp; privacy</Link>
             <form action="/auth/sign-out" method="post"><button className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-muted hover:text-text">Sign out</button></form>
           </>

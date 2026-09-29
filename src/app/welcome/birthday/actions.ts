@@ -14,10 +14,10 @@ export async function confirmBirthday(_prev: BirthdayState, form: FormData): Pro
   const birth = parseYmd(raw);
   if (!birth) return { error: "Enter your birthday as a full date." };
   if (!isOldEnough(birth, todayIn())) {
-    // Under 21: sign them out and keep nothing.
+    // Under 13: sign them out and keep nothing.
     const supabase = await createClient();
     await supabase.auth.signOut();
-    redirect("/auth/21-plus");
+    redirect("/auth/too-young");
   }
   const supabase = await createClient();
   const { error } = await supabase.from("user_birthdays").insert({ user_id: viewer.id, birthdate: raw });

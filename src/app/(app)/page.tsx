@@ -1,6 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { VybeWave } from "@/components/brand/VybeWave";
+import { VybeMap } from "@/components/map/VybeMap";
+import { VybeStatus } from "@/components/map/VybeStatus";
+import { CITIES } from "@/domain/map/map";
+import { getMapData, getViewerCity } from "@/server/map";
 import { FeedTabs } from "@/components/posts/FeedTabs";
 import { PostButton } from "@/components/posts/PostButton";
 import { PostCard } from "@/components/posts/PostCard";
@@ -19,15 +23,18 @@ const FEEDS = [
   { key: "creators", label: "Creators" },
 ] as const;
 
-type Search = { searchParams: Promise<{ feed?: string; before?: string }> };
+type Search = { searchParams: Promise<{ feed?: string; before?: string; city?: string }> };
 
 export default async function HomePage({ searchParams }: Search) {
   const viewer = await getViewer();
-  const { feed: feedParam, before } = await searchParams;
+  const { feed: feedParam, before, city: cityParam } = await searchParams;
   const feed = feedParam === "creators" || !viewer ? "creators" : "following";
   const birth = viewer?.birthdate ? parseYmd(viewer.birthdate) : null;
   const bday = birth ? birthdayStatus(birth, todayIn()) : null;
-  const page = await getFeed(feed === "following" && viewer ? { kind: "following", viewerId: viewer.id } : { kind: "creators" }, before);
+  const [page, map] = await Promise.all([
+    getFeed(feed === "following" && viewer ? { kind: "following", viewerId: viewer.id } : { kind: "creators" }, before),
+    viewer ? getViewerCity(viewer, cityParam).then((slug) => getMapData(slug, viewer)) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -52,6 +59,15 @@ export default async function HomePage({ searchParams }: Search) {
         )}
       </section>
 
+      {viewer && map ? (
+        <>
+          <VybeMap data={map} cities={CITIES.map((c) => ({ slug: c.slug, name: c.name }))} />
+          <VybeStatus city={map.city.slug} mine={map.myStatus} canDrink={viewer.is21Plus} />
+        </>
+      ) : (
+        <VybeWave />
+      )}
+
       {bday && bday.kind !== "later" && (
         <Link href="/birthday" className="vybe-ring flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] p-5 hover:bg-surface-2">
           <span>
@@ -64,7 +80,6 @@ export default async function HomePage({ searchParams }: Search) {
         </Link>
       )}
 
-      <VybeWave />
 
       {!viewer && (
         <section aria-label="Start with what you want" className="grid gap-3 sm:grid-cols-3">
