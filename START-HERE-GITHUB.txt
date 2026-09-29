@@ -1,0 +1,7 @@
+VYBR8 · GITHUB FILES  (upload these to your GitHub repo, not Supabase)
+
+1. Open your repo on github.com → Add file → Upload files.
+2. Drag in EVERYTHING inside this VYBR8-GITHUB folder (src, supabase, docs, tests, scripts, public, and the files).
+   Keep folder names exactly as they are, including (app), [id] and [slug].
+3. Click "Commit changes". Netlify rebuilds by itself; wait for "Published" under Deploys.
+If Netlify says "Failed", send a screenshot of the build log.

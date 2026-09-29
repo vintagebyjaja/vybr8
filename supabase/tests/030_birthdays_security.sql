@@ -11,15 +11,15 @@ create temp table ids as select
   '00000000-0000-4000-9000-0000000000b2'::uuid as velvet;
 grant select on ids to anon, authenticated, service_role;
 
--- ── 21+ at sign-up ────────────────────────────────────────────────────
+-- ── 13+ at sign-up ────────────────────────────────────────────────────
 select tests.fails($$insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(), 'teen@demo.vybr8.test',
-  jsonb_build_object('username', 'too_young', 'birthdate', (current_date - interval '20 years')::date))$$, 'under-21 sign-ups are refused');
-select tests.ok((select count(*) from public.profiles where username = 'too_young') = 0, 'no profile is created for an under-21 sign-up');
+  jsonb_build_object('username', 'too_young', 'birthdate', (current_date - interval '12 years')::date))$$, 'under-13 sign-ups are refused');
+select tests.ok((select count(*) from public.profiles where username = 'too_young') = 0, 'no profile is created for an under-13 sign-up');
 insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-4000-8000-0000000000b0', 'adult@demo.vybr8.test',
-  jsonb_build_object('username', 'just_21', 'birthdate', (current_date - interval '21 years')::date));
-select tests.ok((select count(*) from public.user_birthdays where user_id = '00000000-0000-4000-8000-0000000000b0') = 1, 'turning 21 today is allowed and the birthday is saved');
+  jsonb_build_object('username', 'just_13', 'birthdate', (current_date - interval '13 years')::date));
+select tests.ok((select count(*) from public.user_birthdays where user_id = '00000000-0000-4000-8000-0000000000b0') = 1, 'turning 13 today is allowed and the birthday is saved');
 select tests.fails($$insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(), 'bad@demo.vybr8.test', '{"birthdate":"not-a-date"}')$$, 'invalid birthdates are refused');
-select tests.ok((select count(*) from public.user_birthdays) = 7, 'seed users have birthdays');
+select tests.ok((select count(*) from public.user_birthdays) = 8, 'seed users have birthdays');
 
 -- ── Birthday privacy ──────────────────────────────────────────────────
 select tests.anon();
@@ -29,11 +29,11 @@ select tests.ok((select count(*) from public.user_birthdays) = 1, 'users read on
 select tests.fails($$update public.user_birthdays set birthdate = '1991-10-01' where user_id = '00000000-0000-4000-8000-0000000000a3'$$, 'users cannot change their birthday after sign-up');
 select tests.ok(tests.affected($$update public.user_birthdays set birthdate = '1990-01-01' where user_id = '00000000-0000-4000-8000-0000000000a2'$$) = 0, 'users cannot edit someone else''s birthday');
 
--- A user without a birthday (future social login) sets it once, and must be 21+.
+-- A user without a birthday (future social login) sets it once, and must be 13+.
 select tests.logout();
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-0000000000b9', 'oauth@demo.vybr8.test');
 select tests.login('00000000-0000-4000-8000-0000000000b9');
-select tests.fails($$insert into public.user_birthdays (user_id, birthdate) values ('00000000-0000-4000-8000-0000000000b9', current_date - interval '18 years')$$, 'confirming a birthday still requires 21+');
+select tests.fails($$insert into public.user_birthdays (user_id, birthdate) values ('00000000-0000-4000-8000-0000000000b9', current_date - interval '12 years')$$, 'confirming a birthday still requires 13+');
 select tests.ok(tests.affected($$insert into public.user_birthdays (user_id, birthdate) values ('00000000-0000-4000-8000-0000000000b9', '1995-06-01')$$) = 1, 'user confirms birthday once');
 select tests.fails($$insert into public.user_birthdays (user_id, birthdate) values ('00000000-0000-4000-8000-0000000000a3', '1995-06-01')$$, 'cannot set a birthday for someone else');
 
@@ -49,7 +49,7 @@ select tests.fails($$insert into public.notifications (user_id, kind, title) val
 
 select tests.logout();
 -- Keep the job checks independent of today's real date: drop the users created above.
-delete from public.user_birthdays where user_id in ('00000000-0000-4000-8000-0000000000b0', '00000000-0000-4000-8000-0000000000b9');
+delete from public.user_birthdays where user_id in ('00000000-0000-4000-8000-0000000000b0', '00000000-0000-4000-8000-0000000000b9', '00000000-0000-4000-8000-0000000000a7');
 set local role service_role;
 select tests.ok(public.queue_birthday_notifications('2026-09-28') = 1, 'job sends the one-week-away alert (Jaja, Oct 5)');
 select tests.ok(public.queue_birthday_notifications('2026-09-28') = 0, 'job is safe to run twice');
@@ -72,7 +72,7 @@ select tests.ok((select count(*) from public.notifications where user_id = (sele
 
 -- ── Birthday Perks ────────────────────────────────────────────────────
 select tests.logout(); select tests.anon();
-select tests.ok((select count(*) from public.birthday_perks) = 5, 'active perks are public; pending suggestions are not');
+select tests.ok((select count(*) from public.birthday_perks) = 3, 'active food and discount perks are public; drink perks and pending suggestions are not');
 
 select tests.logout(); select tests.login((select tia from ids));
 select tests.ok(tests.affected($$insert into public.birthday_perks (business_id, title, perk_type, status, source) values ('00000000-0000-4000-9000-0000000000b3', 'Free garlic knots', 'free_food', 'active', 'business')$$) = 1, 'anyone can suggest a perk');

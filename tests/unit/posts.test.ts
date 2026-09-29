@@ -62,6 +62,14 @@ describe("validatePostDraft", () => {
     assert.ok(!validatePostDraft(ME, draft({ caption: "x".repeat(2201) })).ok);
   });
 
+  it("only drink posts can be marked as alcohol", () => {
+    const pour = validatePostDraft(ME, draft({ kind: "pour", isAlcoholic: true }));
+    assert.ok(pour.ok && pour.value.isAlcoholic);
+    assert.ok(!validatePostDraft(ME, draft({ kind: "plate", isAlcoholic: true })).ok);
+    const plain = validatePostDraft(ME, draft({ kind: "pour" }));
+    assert.ok(plain.ok && !plain.value.isAlcoholic);
+  });
+
   it("trims blank text to null", () => {
     const r = validatePostDraft(ME, draft({ caption: "   ", itemName: "" }));
     assert.ok(r.ok && r.value.caption === null && r.value.itemName === null);

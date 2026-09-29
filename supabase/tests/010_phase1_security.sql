@@ -21,7 +21,7 @@ grant select on ids to anon, authenticated;
 delete from public.user_roles where user_id = (select jaja from ids);
 
 -- ── Sign-up trigger ───────────────────────────────────────────────────
-select tests.ok((select count(*) from public.profiles where is_demo) = 6, 'seed users got profiles via sign-up trigger');
+select tests.ok((select count(*) from public.profiles where is_demo) = 7, 'seed users got profiles via sign-up trigger');
 select tests.ok((select count(*) from public.privacy_settings) = (select count(*) from public.profiles), 'every profile has privacy settings');
 select tests.ok((select count(*) from public.user_settings) = (select count(*) from public.profiles), 'every profile has user settings');
 
@@ -88,7 +88,7 @@ select tests.ok(tests.affected($$delete from public.friendships where '00000000-
 
 -- ── Businesses ────────────────────────────────────────────────────────
 select tests.logout(); select tests.anon();
-select tests.ok((select count(*) from public.businesses) = 6, 'anon sees only active businesses');
+select tests.ok((select count(*) from public.businesses) = 8, 'anon sees only active businesses');
 select tests.ok((select count(*) from public.business_locations where business_id = (select rooftop from ids)) = 0, 'locations of hidden or pending businesses are hidden');
 
 select tests.logout(); select tests.login((select jaja from ids));
@@ -97,7 +97,7 @@ select tests.ok(tests.affected($$update public.businesses set name = 'Mine now' 
 select tests.ok(tests.affected($$update public.business_locations set city = 'Nowhere'$$) = 0, 'consumer cannot edit locations');
 
 select tests.logout(); select tests.login((select admin from ids));
-select tests.ok((select count(*) from public.businesses) = 7, 'admin sees pending businesses');
+select tests.ok((select count(*) from public.businesses) = 9, 'admin sees pending businesses');
 select tests.ok(tests.affected($$insert into public.businesses (slug, name, kind, status) values ('admin-added', 'Admin Added', 'cafe', 'active')$$) = 1, 'admin creates a business');
 
 -- ── Claims ────────────────────────────────────────────────────────────

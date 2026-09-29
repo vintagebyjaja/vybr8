@@ -1,8 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  addDays,
+  hasPourAccess,
   ageOn,
   birthdayStatus,
+  isDrinkingAge,
   isOldEnough,
   nextBirthday,
   parseYmd,
@@ -22,18 +25,24 @@ describe("dates", () => {
   });
 });
 
-describe("21+ gate", () => {
-  it("allows someone turning 21 today and refuses the day before", () => {
-    assert.ok(isOldEnough(d("2005-09-28"), d("2026-09-28")));
-    assert.ok(!isOldEnough(d("2005-09-29"), d("2026-09-28")));
+describe("age rules", () => {
+  it("VYBR8 is 13+: allows someone turning 13 today, refuses the day before", () => {
+    assert.ok(isOldEnough(d("2013-09-28"), d("2026-09-28")));
+    assert.ok(!isOldEnough(d("2013-09-29"), d("2026-09-28")));
+  });
+  it("alcohol is 21+: a 16-year-old can join but is not drinking age", () => {
+    assert.ok(isOldEnough(d("2010-06-01"), d("2026-09-28")));
+    assert.ok(!isDrinkingAge(d("2010-06-01"), d("2026-09-28")));
+    assert.ok(isDrinkingAge(d("2005-09-28"), d("2026-09-28")));
+    assert.ok(!isDrinkingAge(d("2005-09-29"), d("2026-09-28")));
   });
   it("counts age in whole years", () => {
     assert.equal(ageOn(d("1994-10-05"), d("2026-10-04")), 31);
     assert.equal(ageOn(d("1994-10-05"), d("2026-10-05")), 32);
   });
   it("leap-day birthdays reach 21 on Mar 1 in non-leap years (matches the database)", () => {
-    assert.ok(!isOldEnough(d("2004-02-29"), d("2025-02-28")));
-    assert.ok(isOldEnough(d("2004-02-29"), d("2025-03-01")));
+    assert.ok(!isDrinkingAge(d("2004-02-29"), d("2025-02-28")));
+    assert.ok(isDrinkingAge(d("2004-02-29"), d("2025-03-01")));
   });
   it("refuses future birthdates", () => assert.ok(!isOldEnough(d("2030-01-01"), d("2026-09-28"), 0)));
 });
@@ -80,4 +89,13 @@ describe("status and today", () => {
     // 02:00 UTC on Sep 29 is still Sep 28 in New York.
     assert.equal(toYmdString(todayIn("America/New_York", new Date("2026-09-29T02:00:00Z"))), "2026-09-28");
   });
+});
+
+it("Pours unlock 5 days before the 21st birthday", () => {
+  const today = { y: 2026, m: 9, d: 29 };
+  assert.equal(hasPourAccess({ y: 2005, m: 10, d: 4 }, today), true, "5 days before");
+  assert.equal(hasPourAccess({ y: 2005, m: 10, d: 5 }, today), false, "6 days before");
+  assert.equal(hasPourAccess({ y: 2005, m: 9, d: 29 }, today), true, "21st birthday");
+  assert.equal(hasPourAccess({ y: 2012, m: 1, d: 1 }, today), false, "teen");
+  assert.deepEqual(addDays({ y: 2026, m: 12, d: 29 }, 5), { y: 2027, m: 1, d: 3 });
 });

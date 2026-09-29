@@ -88,6 +88,27 @@ Demo birthdays: Jaja Oct 5, Tia Feb 29, Marcus Dec 20.
 - `/i/<token>` is the public guest page for people without an account.
 - Group chats disappear at the end time. `purge_ended_linkup_chats()` deletes them every 10 minutes via pg_cron (**Database → Cron**). Live chat uses Supabase Realtime on `linkup_messages` (**Database → Publications → supabase_realtime**).
 
+## Expansion routes
+
+`/search` (unified search) · `/chefs` · `/chef/[slug]` · `/chef/dashboard` · `/food-trucks` · `/food-trucks/[slug]` · `/food-truck/dashboard` · `/max/deep-dive/[itemId]` · `/charts` · `/pricing` (`/business/pricing` redirects to its business tab).
+
+Entitlements are checked on the server (`src/server/entitlements.ts`) and again in the database (`private.viewer_can`, `item_deep_dive`). To give someone a plan before payments are live: `select public.grant_plan('<user id>', 'max', 30);` while signed in as an admin, or insert into `user_subscriptions` from the SQL Editor.
+
+## Setting up a new Supabase project
+
+Run `supabase/setup/1_setup_database.sql` once in **SQL Editor** (it is every migration in order; regenerate it with `bash scripts/build-setup.sh`). Optionally run `supabase/setup/2_demo_places.sql` for fictional Charlotte venues, menus, chefs and food trucks. Projects that already ran an earlier setup file run `supabase/setup/3_update_expansion_and_groups.sql` (or `4_update_groups_only.sql` if the expansion is already in) instead of file 1. Never load `supabase/seed.sql` into production: it has demo logins.
+
+## Adding team members (founder only)
+
+The founder adds or removes team members; nobody else can. Team members get moderator powers:
+
+```sql
+insert into public.user_roles (user_id, role) select id, 'moderator' from public.profiles where username = 'THEIR_USERNAME';
+insert into public.team_members (user_id, title, position) select id, 'Community Team', 10 from public.profiles where username = 'THEIR_USERNAME';
+```
+
+The team removes reported content at `/team/moderation`; the founder upholds or vetoes each removal there. A veto is final.
+
 ## Making yourself Founder on the live site
 
 Team powers are never granted from the app. After you sign up on your live site, open Supabase → SQL Editor and run (with your username):
@@ -96,8 +117,8 @@ Team powers are never granted from the app. After you sign up on your live site,
 insert into public.user_roles (user_id, role)
 select id, 'admin' from public.profiles where username = 'YOUR_USERNAME';
 
-insert into public.team_members (user_id, title, position)
-select id, 'Founder', 1 from public.profiles where username = 'YOUR_USERNAME';
+insert into public.team_members (user_id, title, position, is_founder)
+select id, 'Founder', 1, true from public.profiles where username = 'YOUR_USERNAME';
 ```
 
 Your profile then shows the **VYBR8 Founder** badge, and the creator verification queue appears underneath it. Add teammates the same way (use `moderator` for people who should verify creators but not approve business claims, and a title like `Community Team`).

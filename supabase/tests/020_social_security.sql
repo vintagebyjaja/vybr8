@@ -29,17 +29,22 @@ select tests.ok((select count(*) from public.creator_applications) = 0, 'anon ca
 select tests.logout(); select tests.login((select owner from ids));
 select tests.ok((select count(*) from public.creator_applications) = 0, 'users cannot read other people''s applications');
 select tests.fails($$insert into public.creator_profiles (user_id, creator_type) values ('00000000-0000-4000-8000-0000000000a6', 'big_back')$$, 'users cannot self-verify');
-select tests.fails($$insert into public.creator_applications (creator_type, pitch) values ('liquid_lover', 'I love cocktails and want to share them with everyone.')$$, 'Liquid Lover applicants must confirm they are 21+');
-select tests.ok(tests.affected($$insert into public.creator_applications (creator_type, pitch, is_21_plus_attested) values ('liquid_lover', 'I love cocktails and want to share them with everyone.', true)$$) = 1, 'user applies to be a Liquid Lover');
-select tests.fails($$insert into public.creator_applications (creator_type, pitch) values ('big_back', 'A second pending application should be refused.')$$, 'only one pending application at a time');
+select tests.fails($$insert into public.creator_applications (creator_type, pitch, links) values ('liquid_lover', 'I love cocktails and want to share them with everyone.', '[{"platform":"Instagram","url":"https://instagram.com/example"}]')$$, 'Liquid Lover applicants must confirm they are 21+');
+select tests.ok(tests.affected($$insert into public.creator_applications (creator_type, pitch, is_21_plus_attested, links) values ('liquid_lover', 'I love cocktails and want to share them with everyone.', true, '[{"platform":"Instagram","url":"https://instagram.com/example"}]')$$) = 1, 'user applies to be a Liquid Lover');
+select tests.fails($$insert into public.creator_applications (creator_type, pitch, links) values ('big_back', 'A second pending application should be refused.', '[{"platform":"Instagram","url":"https://instagram.com/example"}]')$$, 'only one pending application at a time');
 select tests.fails($$update public.creator_applications set status = 'approved' where user_id = '00000000-0000-4000-8000-0000000000a6'$$, 'applicants cannot approve themselves');
 select tests.fails($$select public.approve_creator_application('00000000-0000-4000-9200-0000000000d3')$$, 'non-team users cannot verify creators');
 
 select tests.logout(); select tests.login((select tia from ids));
-select tests.fails($$insert into public.creator_applications (creator_type, pitch) values ('big_back', 'Already verified, applying again should fail.')$$, 'verified creators cannot re-apply');
+select tests.fails($$insert into public.creator_applications (creator_type, pitch, links) values ('big_back', 'Already verified, applying again should fail.', '[{"platform":"Instagram","url":"https://instagram.com/example"}]')$$, 'verified creators cannot re-apply');
 
 select tests.logout(); select tests.login((select jaja from ids));
 select tests.ok((select count(*) from public.creator_applications where status = 'pending') = 2, 'founder sees the verification queue');
+select tests.logout(); select tests.login((select admin from ids));
+select tests.fails($$select public.approve_creator_application('00000000-0000-4000-9200-0000000000d3')$$, 'the team must confirm social proof before approving');
+select public.confirm_creator_proof((select chris_app from ids));
+select tests.ok((select proof_confirmed_by from public.creator_applications where id = (select chris_app from ids)) = (select admin from ids), 'team confirms the proof code');
+select tests.logout(); select tests.login((select jaja from ids));
 select public.approve_creator_application((select chris_app from ids), 'Great sample posts (demo)');
 select tests.ok(private.is_verified_creator((select chris from ids)), 'founder verifies a creator');
 select tests.ok((select count(*) from public.audit_logs where action = 'creator.verified') = 1, 'verification is audited');

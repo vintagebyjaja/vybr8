@@ -70,6 +70,10 @@ Post visibility rule (`private.can_view_post`): staff see everything; authors se
 | `queue_birthday_notifications(date)` ✅ | Daily job: one-week-away and happy-birthday alerts, idempotent, respects the user's alert setting. Callable by the service role only. Scheduled with `pg_cron` at 13:00 UTC (9am Eastern) when available. |
 | `private.next_birthday` ✅ | Feb 29 birthdays are celebrated on Feb 28 in non-leap years. |
 
+## Age rules ✅ (tested in `supabase/tests/040_age_rules.sql`)
+
+`20260929000400_age_rules.sql` lowers the minimum age to 13 and makes alcohol 21+: `posts.is_alcoholic` (drinks only), `private.viewer_is_21_plus()`, alcohol posts/photos/vybes/comments and drink perks hidden from under-21 and signed-out viewers, Liquid Lover applications and approvals require a real 21+ birthdate.
+
 ## Menus (Phase 3) 🧭
 
 `menus` (location, name, kind `dinner/lunch/brunch/happy_hour/drinks/late_night/seasonal`, schedule jsonb, `prices_updated_at`) → `menu_sections` (position) → `menu_items` (name, description, `price_cents`, currency, image, `item_type` `food/drink`, `is_alcoholic`, `spice_level`, `is_available`, `sold_out_until`, `category_id`, `price_updated_at`, `source`, `is_demo`).
@@ -149,3 +153,21 @@ Realtime: `linkup_members`, `linkup_candidates` published for live updates.
 
 - **Real Supabase:** `supabase link` then `supabase db push`. Seed with `supabase db reset` locally.
 - **Offline check:** `scripts/test-db.sh` spins up a throwaway Postgres, installs a minimal Supabase auth shim, applies every migration and seed, and runs the SQL security tests.
+
+## Vybe Map + Link Ups (20260930000100, 20260930000200)
+- `cities` (7 launch cities, bounds for the map), `business_locations.city_slug`, `businesses.logo_url`, `user_settings.city_slug`
+- `business_hours` (weekday 0 = Sunday; `closes_at <= opens_at` means past midnight)
+- `vybe_statuses` (one per user, friends read while active, max 12 hours)
+- `linkups`, `linkup_members`, `linkup_invites` (only the sha256 of each guest token is stored), `linkup_messages`
+- RPCs: `join_linkup`, `leave_linkup`, `respond_to_request`, `remove_member`, `invite_to_linkup`, `create_guest_invite`, `revoke_guest_invite`, `guest_view_invite`, `guest_accept_invite`, `guest_decline_invite`, `guest_messages`, `guest_send_message`, `linkup_chat`, `linkup_spots`, `purge_ended_linkup_chats` (pg_cron every 10 minutes)
+
+## Expansion (20261002000100–400)
+- **Menus & ratings:** `menu_items` (category food/drink, dish_type for charts, sold_out_until), `item_ratings` (0–10, free), `place_ratings` (overall, Service Vybe, value, aesthetic; not your own place), views `menu_item_stats`, `place_stats`.
+- **Food intelligence (MAX):** `menu_item_intel` (recipe_level: verified_recipe / verified_ingredients / preparation_info / vybr8_estimate / unknown, disclosure switches, kitchen note, labeled estimate), `menu_item_ingredients`, `menu_item_nutrition` (source: verified / restaurant_provided / database_provided / estimated / unknown). Only editors read these tables; everyone else goes through `item_deep_dive(item)` which applies plan + disclosure. `item_swaps(item)` powers Better Swap.
+- **Personal nutrition:** `nutrition_targets`, `food_logs` (owner only).
+- **Plans & entitlements:** `plans`, `plan_entitlements`, `user_subscriptions`, `business_subscriptions`; `my_plan()`, `business_plan_info()`, `grant_plan()` (admins, until Stripe), private `viewer_can(key)`, `business_can(business, key)`. `promotion_campaigns` (always labeled; only the team activates; never affects scores/rank).
+- **Chefs:** `chef_profiles` (+ specialties, services, service_areas, portfolio, packages, availability, verifications), `chef_business_relationships` (role, start/end, source; "current" is computed), `chef_menu_item_attributions` (only businesses/team credit dishes), `chef_reviews` (service reviews; not for restaurant visits), view `chef_review_stats`.
+- **Food trucks:** businesses with kind `food_truck` + `food_truck_profiles`, `food_truck_schedules` (time windows, status, source), `food_truck_live_status` (WE'RE HERE, max 8h), `food_truck_follows` (notify → in-app alerts), `food_trucks_in_city()`.
+
+## Groups & family (20261003000100)
+`groups` (kind family / dating / friends / organization / ftk; size limits; dating 2 people 18+), `group_members` (user **or** kid profile, role owner/admin/member, status invited/active, relationship), `dependents` + `dependent_guardians` (kid profiles), `taste_profiles` (user or kid), `group_plans` + `group_plan_picks` (no alcohol picks for kids or under-21s), `dependent_transfers` (hashed one-time codes). RPCs `create_dependent_transfer`, `redeem_dependent_transfer`. Invites raise in-app alerts.
